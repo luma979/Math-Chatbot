@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluation Results</title>
+</head>
+<body>
+
+    <h2>Evaluation Results for Topic: {{ topic }}</h2>
+
+    <h3>General Overview:</h3>
+    <ul>
+        {% for gap in result.gaps %}
+            <li>{{ gap }}</li>
+        {% endfor %}
+    </ul>
+
+    <h3>Detailed Feeback, Corrections, and Learning Gaps:</h3>
+    <p>{{ result.feedback }}</p>
+
+    <hr>
+
+    <h3>Chat with the AI Tutor</h3>
+    <div id="chatbox">
+        <p><strong>AI Tutor:</strong> You can ask follow-up questions related to {{ topic }}.</p>
+    </div>
+
+    <input type="text" id="userInput" placeholder="Type your question here...">
+    <button onclick="sendMessage()">Ask</button>
+
+    <script>
+        function sendMessage() {
+            var userMessage = document.getElementById("userInput").value;
+            if (userMessage.trim() === "") return;
+
+            var chatbox = document.getElementById("chatbox");
+            chatbox.innerHTML += "<p><strong>You:</strong> " + userMessage + "</p>";
+
+            fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: userMessage, topic: "{{ topic }}" })
+            })
+            .then(response => response.json())
+            .then(data => {
+                chatbox.innerHTML += "<p><strong>AI Tutor:</strong> " + data.response + "</p>";
+            })
+            .catch(error => {
+                chatbox.innerHTML += "<p><strong>AI Tutor:</strong> Error fetching response.</p>";
+            });
+
+            document.getElementById("userInput").value = "";
+        }
+    </script>
+
+</body>
+</html>

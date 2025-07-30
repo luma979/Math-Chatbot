@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Assessment Form</title>
+</head>
+<body>
+    <div style="display: flex;">
+        <!-- Form Section -->
+        <div style="flex: 1; padding: 20px;">
+            <h2>Self-Assessment Form</h2>
+            <form action="http://127.0.0.1:5000/evaluate" method="POST">
+                <label for="topic">Topic:</label><br>
+                <input type="text" id="topic" name="topic" style="width: 100%; height: 30px;" required><br><br>
+
+                <label for="facts">Facts:</label><br>
+                <textarea id="facts" name="facts" style="width: 100%; height: 100px;" required></textarea><br><br>
+
+                <label for="strategies">Strategies:</label><br>
+                <textarea id="strategies" name="strategies" style="width: 100%; height: 100px;" required></textarea><br><br>
+
+                <label for="procedures">Procedures:</label><br>
+                <textarea id="procedures" name="procedures" style="width: 100%; height: 100px;" required></textarea><br><br>
+
+                <label for="rationales">Rationales:</label><br>
+                <textarea id="rationales" name="rationales" style="width: 100%; height: 100px;" required></textarea><br><br>
+
+                <button type="submit" style="width: 100%; height: 40px;">Submit</button>
+             </form>
+        </div>
+
+        <!-- Paragraph Section -->
+        <div style="flex: 1; padding: 20px; border-left: 1px solid #000; overflow-y: auto; height: 100vh;">
+            <h2>Self Assessment Template Math</h2>
+            <p>
+                I want to teach you how to assess your own knowledge that you have about a subject area. Let’s do this 
+                by taking an example that you already know. Suppose you wanted to assess your own knowledge about solving 
+                2-step equations of the form ax + b = c. An example of this type of problem is 2x + 3 = 15. If I want to be 
+                able to solve problems like these, I need four types of knowledge. These are facts, strategies, procedures, 
+                and rationales. Fact are concepts you have that describe objects or elements. For example, for two step 
+                equations, I need to know what variables, constants, coefficients, equations, and expressions are. Strategies 
+                are general processes I would use to solve a problem. For two step equations, this would be reverse order of 
+                operations. Procedures are the specific steps that I would use in a strategy. So if I am using reverse order 
+                of operations, I need to know additive and multiplicative inverses. Finally, I need to know rationales which 
+                are the reasons why the strategies or the procedures work the way they do. For example, this could include 
+                things like the subtraction or the division property of equality that says that when you do the same operation 
+                to both sides of an equation, you preserve the value of the equation. You can think of facts as telling you 
+                “what”, strategies and procedures as telling you “how” and rationales as telling you “why”.
+            </p>
+            <p>
+                With this in mind, this is how I might assess my own knowledge of solving two step equations. For facts, I 
+                need to know what variables, constants, coefficients, equations and expressions are. A variable is an unknown 
+                quantity, usually represented by a letter. A constant is a specific number. A coefficient is a number that you 
+                multiply a variable by like 2x. An equation is an expression that is equally to another expression and the 
+                two expressions are joined by an equal sign. An expression is one or more terms that are combined by 
+                mathematical operations like addition, subtraction, multiplication and division.
+            </p>
+            <p>
+                For strategies, I need to know reverse order of operations which is SADMEP. This stands for subtraction, 
+                addition, division, multiplication, exponents and parentheses. I know that I’m supposed to do these in order 
+                but I don’t remember whether I’m supposed to do subtraction always before addition or just which one goes 
+                first. The same is true for division and multiplication.
+            </p>
+            <p>
+                For procedures, I need to know additive inverse and multiplicative inverse. The additive inverse is taking the 
+                number with the opposite sign as the constant and adding it to both sides of the equation. The multiplicative 
+                inverse is taking the inverse of the coefficient of the variable and multiplying both sides of the equation 
+                by it. However, if the coefficient is negative, I’m not sure if the multiplicative inverse is supposed to be 
+                negative as well.
+            </p>
+            <p>
+                For rationales, I believe the two rationales I need are the subtraction property of equality and the division 
+                property of equality. The subtraction property of equality says that if I subtract the same number from both 
+                sides, which is what I’m doing with the additive inverse, I preserve the equality. Similarly, the division 
+                property of equality says that if I divide both sides of the equation by the same number, which is what I’m 
+                doing with the multiplicative inverse, I preserve the equality.
+            </p>
+            <p>
+                When I look over what I wrote, I see that I am good with my facts. On my strategy, I’m not sure about the 
+                order of steps in reverse order of operations when it comes to subtraction and addition or multiplication 
+                and division, so I need to learn those. On procedures, I’m not sure what to do with multiplicative inverses 
+                when the coefficient is negative, so I need to learn that as well. For rationales, I think I’m OK. I don’t 
+                think I have any missing facts/concepts that I left out that I should know or I didn’t list any facts/concepts 
+                where I didn’t know what they were. For the strategy, I believe I listed the correct strategy and parts of the 
+                strategy, but I wasn’t sure about some of the ordering of steps in the strategy. For procedures, I was good 
+                on the additive inverse but had a question on carrying out the multiplicative inverse when the coeffcient was 
+                negative. For rationales, I think I had all the rationales that were important and that I understood them as 
+                well. I don’t think I left anything out.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
