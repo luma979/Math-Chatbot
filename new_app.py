@@ -1,23 +1,47 @@
-'''from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session
 from flask_session import Session
+from flask_httpauth import HTTPBasicAuth # Import the library
 import openai
-import spacy
+# import spacy # Removed as it's not used
 import sympy as sp
 import os
+from dotenv import load_dotenv
 
-# Initialize Flask app
+# Load environment variables from .env file
+load_dotenv()
+
+# Initialize Flask app and HTTPAuth
 app = Flask(__name__)
+auth = HTTPBasicAuth()
+
+# --- START OF AUTHENTICATION SETUP ---
+
+# Create a dictionary of users and their passwords.
+users = {
+    "tester123": "JohnLeddo123123@",
+    "tester321": "LeddoJohn321321@"
+}
+
+@auth.verify_password
+def verify_password(username, password):
+    """Checks if the provided username and password are valid."""
+    if username in users and users.get(username) == password:
+        return username
+
+# --- END OF AUTHENTICATION SETUP ---
+
 
 # Configure session to use filesystem
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(__file__), 'sessions')
 Session(app)
 
-# Load spaCy NLP model
-nlp = spacy.load("en_core_web_sm")
-
-# Set OpenAI API key (ensure to set it in the environment for security)
-openai.api_key = 
+# Set OpenAI API key from environment variable
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("No OpenAI API key found. Make sure it's set in your .env file.")
+openai.api_key = api_key
+print("OpenAI API Key loaded successfully.") # Added for confirmation
 
 # Function to analyze learning gaps
 def analyze_math_gaps(topic, facts, strategies, procedures, rationales):
@@ -39,148 +63,7 @@ def verify_math_solution(user_solution, correct_equation):
         correct_expr = sp.sympify(correct_equation)
         return sp.simplify(user_expr - correct_expr) == 0
     except Exception as e:
-        print("Error in verifying solution:", e)
-        return False
-
-# Function to evaluate self-assessment using OpenAI (LLM)
-def evaluate_math_self_assessment(topic, facts, strategies, procedures, rationales):
-    gaps = analyze_math_gaps(topic, facts, strategies, procedures, rationales)
-
-    prompt = f"""
-    The student has provided a self-assessment on the topic "{topic}" with the following details:
-
-    - **Facts:** {facts}
-    - **Strategies:** {strategies}
-    - **Procedures:** {procedures}
-    - **Rationales:** {rationales}
-
-    Identify **learning gaps**, explain missing concepts, and suggest study techniques. 
-    Ensure that explanations do not repeat what the user already knows.
-    """
-
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "system", "content": "You are a math tutor helping students identify learning gaps."},
-                      {"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=500
-        )
-        feedback = response.choices[0].message.content
-    except Exception as e:
-        feedback = f"Error fetching response from OpenAI: {e}"
-
-    session['previous_context'] = {
-        "topic": topic,
-        "facts": facts,
-        "strategies": strategies,
-        "procedures": procedures,
-        "rationales": rationales
-    }
-
-    return {"gaps": gaps, "feedback": feedback}
-
-# Route for the input form
-@app.route('/')
-def index():
-    return render_template("index.html")
-
-# Route to process form input and display chatbot interface
-@app.route('/evaluate', methods=['POST'])
-def evaluate():
-    topic = request.form['topic']
-    facts = request.form['facts']
-    strategies = request.form['strategies']
-    procedures = request.form['procedures']
-    rationales = request.form['rationales']
-
-    result = evaluate_math_self_assessment(topic, facts, strategies, procedures, rationales)
-    
-    return render_template("evaluate.html", result=result, topic=topic)
-
-# Route to handle chatbot follow-up questions
-@app.route('/chat', methods=['POST'])
-def chat():
-    user_message = request.json.get("message")
-    previous_context = session.get('previous_context', {})
-
-    prompt = f"""
-    The student is asking a follow-up question about the topic: "{previous_context.get('topic', 'Unknown Topic')}".
-    Previous context includes:
-    - **Facts:** {previous_context.get('facts', '')}
-    - **Strategies:** {previous_context.get('strategies', '')}
-    - **Procedures:** {previous_context.get('procedures', '')}
-    - **Rationales:** {previous_context.get('rationales', '')}
-
-    **User Question:** {user_message}
-    
-    Provide a detailed answer, ensuring not to repeat what they already know.
-    """
-
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "system", "content": "You are a knowledgeable tutor answering follow-up questions."},
-                      {"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=500
-        )
-        bot_response = response.choices[0].message.content
-    except Exception as e:
-        bot_response = f"Error fetching response: {e}"
-
-    return jsonify({"response": bot_response})
-
-# Run Flask app
-if __name__ == '__main__':
-    if not os.path.exists(app.config['SESSION_FILE_DIR']):
-        os.makedirs(app.config['SESSION_FILE_DIR'])
-    app.run(debug=True)
-'''
-
-
-from flask import Flask, render_template, request, jsonify, session
-from flask_session import Session
-import openai
-import spacy
-import sympy as sp
-import os
-
-# Initialize Flask app
-app = Flask(__name__)
-
-# Configure session to use filesystem
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(__file__), 'sessions')
-Session(app)
-
-# Load spaCy NLP model
-nlp = spacy.load("en_core_web_sm")
-
-# Set OpenAI API key (ensure to set it in the environment for security)
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Function to analyze learning gaps
-def analyze_math_gaps(topic, facts, strategies, procedures, rationales):
-    gaps = []
-    if len(facts.split()) < 10:
-        gaps.append("You can improve your mathematical facts by adding definitions, formulas, and theorems.")
-    if len(strategies.split()) < 10:
-        gaps.append("You can improve your strategies by explaining multiple approaches with step-by-step reasoning.")
-    if len(procedures.split()) < 10:
-        gaps.append("You can make your procedures more clear by providing a structured, logical breakdown of problem-solving steps.")
-    if len(rationales.split()) < 10:
-        gaps.append("You can add depth to your rationales by justifying why each step is necessary in the solution process.")
-    return gaps
-
-# Function to verify math solutions using SymPy
-def verify_math_solution(user_solution, correct_equation):
-    try:
-        user_expr = sp.sympify(user_solution)
-        correct_expr = sp.sympify(correct_equation)
-        return sp.simplify(user_expr - correct_expr) == 0
-    except Exception as e:
-        print("Error in verifying solution:", e)
+        print(f"Error in verifying solution: {e}")
         return False
 
 # Function to evaluate self-assessment using OpenAI (LLM)
@@ -232,13 +115,15 @@ def evaluate_math_self_assessment(topic, facts, strategies, procedures, rational
 
     return {"gaps": gaps, "feedback": feedback}
 
-# Route for the input form
+# Route for the input form - NOW PROTECTED
 @app.route('/')
+@auth.login_required # This line protects the page
 def index():
     return render_template("index.html")
 
 # Route to process form input and display chatbot interface
 @app.route('/evaluate', methods=['POST'])
+@auth.login_required # Protect this route as well
 def evaluate():
     topic = request.form['topic']
     facts = request.form['facts']
@@ -252,6 +137,7 @@ def evaluate():
 
 # Route to handle chatbot follow-up questions
 @app.route('/chat', methods=['POST'])
+@auth.login_required # And this one
 def chat():
     user_message = request.json.get("message")
     previous_context = session.get('previous_context', {})
@@ -267,8 +153,7 @@ def chat():
     **User Question:** {user_message}
 
     Provide a precise, correction-focused answer that:
-    - **Identifies errors or misconceptions in the question.** 
-    - **Clarifies gaps in reasoning.**
+    - **Identifies errors or misconceptions in the question.** - **Clarifies gaps in reasoning.**
     - **Uses structured, step-by-step explanations.**
     - **Does not repeat known information.**
     - **Suggests specific improvements.**
@@ -294,4 +179,5 @@ def chat():
 if __name__ == '__main__':
     if not os.path.exists(app.config['SESSION_FILE_DIR']):
         os.makedirs(app.config['SESSION_FILE_DIR'])
-    app.run(debug=True)
+    # Added use_reloader=False to prevent crashing in Spyder
+    app.run(debug=True, use_reloader=False)
