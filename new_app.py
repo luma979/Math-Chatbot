@@ -1,35 +1,167 @@
+'''from flask import Flask, render_template, request, jsonify, session
+from flask_session import Session
+import openai
+import spacy
+import sympy as sp
+import os
+
+# Initialize Flask app
+app = Flask(__name__)
+
+# Configure session to use filesystem
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(__file__), 'sessions')
+Session(app)
+
+# Load spaCy NLP model
+nlp = spacy.load("en_core_web_sm")
+
+# Set OpenAI API key (ensure to set it in the environment for security)
+openai.api_key = 
+
+# Function to analyze learning gaps
+def analyze_math_gaps(topic, facts, strategies, procedures, rationales):
+    gaps = []
+    if len(facts.split()) < 10:
+        gaps.append("Your mathematical facts are too brief. Add definitions and key formulas.")
+    if len(strategies.split()) < 10:
+        gaps.append("Your strategies lack depth. Explain different approaches to solving problems.")
+    if len(procedures.split()) < 10:
+        gaps.append("Your procedures are incomplete. Include step-by-step calculations.")
+    if len(rationales.split()) < 10:
+        gaps.append("Your rationales are unclear. Explain why these steps are necessary.")
+    return gaps
+
+# Function to verify math solutions using SymPy
+def verify_math_solution(user_solution, correct_equation):
+    try:
+        user_expr = sp.sympify(user_solution)
+        correct_expr = sp.sympify(correct_equation)
+        return sp.simplify(user_expr - correct_expr) == 0
+    except Exception as e:
+        print("Error in verifying solution:", e)
+        return False
+
+# Function to evaluate self-assessment using OpenAI (LLM)
+def evaluate_math_self_assessment(topic, facts, strategies, procedures, rationales):
+    gaps = analyze_math_gaps(topic, facts, strategies, procedures, rationales)
+
+    prompt = f"""
+    The student has provided a self-assessment on the topic "{topic}" with the following details:
+
+    - **Facts:** {facts}
+    - **Strategies:** {strategies}
+    - **Procedures:** {procedures}
+    - **Rationales:** {rationales}
+
+    Identify **learning gaps**, explain missing concepts, and suggest study techniques. 
+    Ensure that explanations do not repeat what the user already knows.
+    """
+
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": "You are a math tutor helping students identify learning gaps."},
+                      {"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=500
+        )
+        feedback = response.choices[0].message.content
+    except Exception as e:
+        feedback = f"Error fetching response from OpenAI: {e}"
+
+    session['previous_context'] = {
+        "topic": topic,
+        "facts": facts,
+        "strategies": strategies,
+        "procedures": procedures,
+        "rationales": rationales
+    }
+
+    return {"gaps": gaps, "feedback": feedback}
+
+# Route for the input form
+@app.route('/')
+def index():
+    return render_template("index.html")
+
+# Route to process form input and display chatbot interface
+@app.route('/evaluate', methods=['POST'])
+def evaluate():
+    topic = request.form['topic']
+    facts = request.form['facts']
+    strategies = request.form['strategies']
+    procedures = request.form['procedures']
+    rationales = request.form['rationales']
+
+    result = evaluate_math_self_assessment(topic, facts, strategies, procedures, rationales)
+    
+    return render_template("evaluate.html", result=result, topic=topic)
+
+# Route to handle chatbot follow-up questions
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_message = request.json.get("message")
+    previous_context = session.get('previous_context', {})
+
+    prompt = f"""
+    The student is asking a follow-up question about the topic: "{previous_context.get('topic', 'Unknown Topic')}".
+    Previous context includes:
+    - **Facts:** {previous_context.get('facts', '')}
+    - **Strategies:** {previous_context.get('strategies', '')}
+    - **Procedures:** {previous_context.get('procedures', '')}
+    - **Rationales:** {previous_context.get('rationales', '')}
+
+    **User Question:** {user_message}
+    
+    Provide a detailed answer, ensuring not to repeat what they already know.
+    """
+
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": "You are a knowledgeable tutor answering follow-up questions."},
+                      {"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=500
+        )
+        bot_response = response.choices[0].message.content
+    except Exception as e:
+        bot_response = f"Error fetching response: {e}"
+
+    return jsonify({"response": bot_response})
+
+# Run Flask app
+if __name__ == '__main__':
+    if not os.path.exists(app.config['SESSION_FILE_DIR']):
+        os.makedirs(app.config['SESSION_FILE_DIR'])
+    app.run(debug=True)
+'''
+
+
 from flask import Flask, render_template, request, jsonify, session
 from flask_session import Session
 import openai
 import spacy
 import sympy as sp
-from sympy.core.sympify import SympifyError
 import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
 
-# Configure session to use filesystem for storing session data
+# Configure session to use filesystem
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(__file__), 'sessions')
 Session(app)
 
-# Load spaCy NLP model for any potential future text processing
+# Load spaCy NLP model
 nlp = spacy.load("en_core_web_sm")
 
-# Set OpenAI API key from environment variable
+# Set OpenAI API key (ensure to set it in the environment for security)
 api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise ValueError("No OpenAI API key found. Make sure it's set in your .env file.")
-openai.api_key = api_key
 
-# Function to analyze learning gaps based on input length
+# Function to analyze learning gaps
 def analyze_math_gaps(topic, facts, strategies, procedures, rationales):
-    """Provides simple feedback based on the length of the user's input."""
     gaps = []
     if len(facts.split()) < 10:
         gaps.append("You can improve your mathematical facts by adding definitions, formulas, and theorems.")
@@ -43,25 +175,16 @@ def analyze_math_gaps(topic, facts, strategies, procedures, rationales):
 
 # Function to verify math solutions using SymPy
 def verify_math_solution(user_solution, correct_equation):
-    """
-    Verifies if the user's solution equation is mathematically equivalent to the correct one.
-    """
     try:
-        # Safely convert string inputs into mathematical expressions
-        # The original code had an error here; this is the corrected version.
         user_expr = sp.sympify(user_solution)
         correct_expr = sp.sympify(correct_equation)
-        
-        # Simplify the difference between the two expressions. If it's zero, they are equivalent.
         return sp.simplify(user_expr - correct_expr) == 0
-    except (SympifyError, TypeError, SyntaxError) as e:
-        # Catch errors if the input is not a valid mathematical expression
-        print(f"Error in verifying solution: {e}")
+    except Exception as e:
+        print("Error in verifying solution:", e)
         return False
 
-# Function to evaluate the initial self-assessment using OpenAI
+# Function to evaluate self-assessment using OpenAI (LLM)
 def evaluate_math_self_assessment(topic, facts, strategies, procedures, rationales):
-    """Generates AI-powered feedback based on the user's self-assessment."""
     gaps = analyze_math_gaps(topic, facts, strategies, procedures, rationales)
 
     prompt = f"""
@@ -99,7 +222,6 @@ def evaluate_math_self_assessment(topic, facts, strategies, procedures, rational
     except Exception as e:
         feedback = f"Error fetching response from OpenAI: {e}"
 
-    # Store the context in the session for follow-up questions
     session['previous_context'] = {
         "topic": topic,
         "facts": facts,
@@ -110,36 +232,25 @@ def evaluate_math_self_assessment(topic, facts, strategies, procedures, rational
 
     return {"gaps": gaps, "feedback": feedback}
 
-# Route for the main input form page
+# Route for the input form
 @app.route('/')
 def index():
     return render_template("index.html")
 
-# Route to process form and show the evaluation
+# Route to process form input and display chatbot interface
 @app.route('/evaluate', methods=['POST'])
 def evaluate():
-    # Get self-assessment data from the form
     topic = request.form['topic']
     facts = request.form['facts']
     strategies = request.form['strategies']
     procedures = request.form['procedures']
     rationales = request.form['rationales']
 
-    # Get optional equation data for verification
-    user_solution = request.form.get('user_solution')
-    correct_equation = request.form.get('correct_equation')
-    
-    verification_result = None
-    if user_solution and correct_equation:
-        is_correct = verify_math_solution(user_solution, correct_equation)
-        verification_result = "Correct!" if is_correct else "Incorrect. Let's review the steps to see where things went wrong."
-
-    # Get the AI-generated feedback
     result = evaluate_math_self_assessment(topic, facts, strategies, procedures, rationales)
     
-    return render_template("evaluate.html", result=result, topic=topic, verification=verification_result)
+    return render_template("evaluate.html", result=result, topic=topic)
 
-# Route to handle follow-up chat messages
+# Route to handle chatbot follow-up questions
 @app.route('/chat', methods=['POST'])
 def chat():
     user_message = request.json.get("message")
@@ -156,7 +267,8 @@ def chat():
     **User Question:** {user_message}
 
     Provide a precise, correction-focused answer that:
-    - **Identifies errors or misconceptions in the question.** - **Clarifies gaps in reasoning.**
+    - **Identifies errors or misconceptions in the question.** 
+    - **Clarifies gaps in reasoning.**
     - **Uses structured, step-by-step explanations.**
     - **Does not repeat known information.**
     - **Suggests specific improvements.**
@@ -178,9 +290,8 @@ def chat():
 
     return jsonify({"response": bot_response})
 
-# Run the Flask app
+# Run Flask app
 if __name__ == '__main__':
-    # Ensure the session directory exists before starting
     if not os.path.exists(app.config['SESSION_FILE_DIR']):
         os.makedirs(app.config['SESSION_FILE_DIR'])
     app.run(debug=True)
